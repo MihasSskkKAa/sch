@@ -150,11 +150,34 @@
   }
 
   /**
-   * Берёт случайную выборку вопросов уровня и перемешивает варианты ответов,
+   * Вопросы проваленных попыток: id уровня → тексты вопросов той партии.
+   * Нужны, чтобы после проигрыша уровень выдал полностью другой набор.
+   */
+  var проваленные = {};
+
+  /**
+   * Собирает набор вопросов на партию. После проигрыша вопросы прошлой попытки
+   * исключаются целиком; если свежих не хватает (банк уровня слишком мал),
+   * недостающие добираются из отложенных.
+   */
+  function pickQuestions(level) {
+    var исключить = проваленные[level.id] || [];
+    var свежие = level.questions.filter(function (q) { return исключить.indexOf(q.text) < 0; });
+
+    if (свежие.length >= QUESTIONS_PER_ROUND) {
+      return shuffle(свежие).slice(0, QUESTIONS_PER_ROUND);
+    }
+
+    var отложенные = level.questions.filter(function (q) { return исключить.indexOf(q.text) >= 0; });
+    return shuffle(свежие).concat(shuffle(отложенные)).slice(0, QUESTIONS_PER_ROUND);
+  }
+
+  /**
+   * Берёт выборку вопросов уровня и перемешивает варианты ответов,
    * сохраняя указатель на верный.
    */
   function prepareQuestions(level) {
-    return shuffle(level.questions).slice(0, QUESTIONS_PER_ROUND).map(function (q) {
+    return pickQuestions(level).map(function (q) {
       var pairs = q.options.map(function (text, i) {
         return { text: text, isCorrect: i === q.correct };
       });
@@ -409,6 +432,13 @@
     var stars = 0;
     if (passed) {
       stars = state.correct === total ? 3 : state.correct >= total - 1 ? 2 : 1;
+    }
+
+    /* Провал — откладываем эти вопросы, чтобы перепрохождение началось с чистого набора. */
+    if (passed) {
+      delete проваленные[state.level.id];
+    } else {
+      проваленные[state.level.id] = state.questions.map(function (q) { return q.text; });
     }
 
     if (passed) {
