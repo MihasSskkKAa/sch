@@ -9,6 +9,9 @@
   var STORAGE_KEY = 'school-quest-progress';
   var SOUND_KEY = 'school-quest-sound';
   var RETRY_KEY = 'school-quest-retry';
+  var RECORDS_KEY = 'school-quest-records';
+  var PLAYER_KEY = 'school-quest-player';
+  var MAX_RECORDS = 15;
   var LIVES_PER_LEVEL = 3;
   var HINTS_PER_LEVEL = 3;
   var QUESTIONS_PER_ROUND = 8;
@@ -66,6 +69,112 @@
     } catch (e) {
       /* приватный режим браузера — тогда набор действует только до перезагрузки */
     }
+  }
+
+  /* ================= Рекорды ================= */
+
+  /**
+   * Таблица рекордов целиком локальная: сервера у игры нет, поэтому результаты
+   * лежат в браузере игрока и никуда не отправляются.
+   */
+  /**
+   * Порядок и длину таблицы задаём при чтении, а не только при записи:
+   * в хранилище могут оказаться данные от старой версии или правленые вручную.
+   */
+  function нормализовать(list) {
+    return list
+      .filter(function (r) { return r && typeof r.очки === 'number'; })
+      .sort(function (a, b) { return b.очки - a.очки; })
+      .slice(0, MAX_RECORDS);
+  }
+
+  function loadRecords() {
+    try {
+      var raw = localStorage.getItem(RECORDS_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? нормализовать(list) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveRecords(list) {
+    try {
+      localStorage.setItem(RECORDS_KEY, JSON.stringify(list));
+    } catch (e) {
+      /* приватный режим — таблица проживёт до перезагрузки */
+    }
+  }
+
+  function loadPlayerName() {
+    try {
+      return localStorage.getItem(PLAYER_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function savePlayerName(name) {
+    try { localStorage.setItem(PLAYER_KEY, name); } catch (e) { /* без сохранения */ }
+  }
+
+  /** id последнего добавленного результата — чтобы подсветить его в таблице. */
+  var свежийРекорд = null;
+
+  function addRecord(level, score, stars) {
+    var list = loadRecords();
+
+    свежийРекорд = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 7);
+    list.push({
+      id: свежийРекорд,
+      имя: loadPlayerName() || 'Игрок',
+      уровень: level.id,
+      название: level.title,
+      очки: score,
+      звёзды: stars,
+      дата: new Date().toISOString()
+    });
+
+    saveRecords(нормализовать(list));
+  }
+
+  function форматДаты(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    function дв(n) { return n < 10 ? '0' + n : String(n); }
+    return дв(d.getDate()) + '.' + дв(d.getMonth() + 1) + '.' + d.getFullYear();
+  }
+
+  function renderRecords() {
+    var list = loadRecords();
+    var body = $('records-body');
+
+    $('player-name').value = loadPlayerName();
+    $('records-empty').hidden = list.length > 0;
+    $('records-wrap').hidden = list.length === 0; // без строк шапка таблицы не нужна
+    body.innerHTML = '';
+
+    list.forEach(function (r, i) {
+      var tr = document.createElement('tr');
+      if (r.id === свежийРекорд) tr.className = 'is-new';
+      tr.innerHTML =
+        '<td class="rec-place">' + (i + 1) + '</td>' +
+        '<td>' + экранировать(r.имя) + '</td>' +
+        '<td>' + r.уровень + ' — ' + экранировать(r.название) + '</td>' +
+        '<td class="rec-stars">' + starsRow(r.звёзды, 3) + '</td>' +
+        '<td class="rec-score">' + r.очки + '</td>' +
+        '<td class="rec-date">' + форматДаты(r.дата) + '</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  /** Имя игрока попадает в разметку, поэтому обезвреживаем угловые скобки. */
+  function экранировать(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function isUnlocked(levelId) {
@@ -472,6 +581,8 @@
     }
     saveRetryPool(pool);
 
+    if (passed) addRecord(state.level, state.score, stars);
+
     if (passed) {
       var progress = loadProgress();
       var prev = progress[state.level.id];
@@ -528,6 +639,30 @@
   $('btn-menu').addEventListener('click', function () {
     renderMenu();
     showScreen('screen-menu');
+  });
+
+  function openRecords() {
+    renderRecords();
+    showScreen('screen-records');
+  }
+
+  $('btn-records').addEventListener('click', openRecords);
+  $('btn-result-records').addEventListener('click', openRecords);
+
+  $('btn-records-back').addEventListener('click', function () {
+    renderMenu();
+    showScreen('screen-menu');
+  });
+
+  $('btn-records-clear').addEventListener('click', function () {
+    if (!confirm('Очистить таблицу рекордов? Прогресс по уровням останется.')) return;
+    try { localStorage.removeItem(RECORDS_KEY); } catch (e) { /* нечего чистить */ }
+    свежийРекорд = null;
+    renderRecords();
+  });
+
+  $('player-name').addEventListener('input', function () {
+    savePlayerName(this.value.trim());
   });
 
   $('btn-reset').addEventListener('click', function () {

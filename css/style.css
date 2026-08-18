@@ -136,7 +136,13 @@ body {
 .level-stars { display: block; font-size: 14px; letter-spacing: 2px; margin-top: 6px; }
 .level-lock { font-size: 20px; color: var(--muted); }
 
-.btn-reset { margin: 26px auto 0; display: block; }
+.menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 26px;
+}
 
 /* ---------- Кнопки ---------- */
 .btn {
@@ -390,6 +396,94 @@ body {
 .rn small { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
 
 .result-actions { display: grid; gap: 10px; }
+
+/* ---------- Таблица рекордов ---------- */
+.records-head { text-align: center; margin-bottom: 20px; }
+.records-head h2 { font-size: 26px; font-weight: 800; }
+
+.records-note {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.player-row span { font-size: 14px; color: var(--muted); white-space: nowrap; }
+
+.player-row input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 12px;
+}
+
+.player-row input:focus { outline: none; border-color: var(--accent); }
+
+/* Широкую таблицу прокручиваем внутри контейнера, а не всей страницей. */
+.records-wrap {
+  overflow-x: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.records {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.records th,
+.records td { padding: 12px 14px; text-align: left; }
+
+.records th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.records tbody tr + tr td { border-top: 1px solid var(--line); }
+.records .rec-place { color: var(--muted); font-variant-numeric: tabular-nums; }
+.records .rec-score { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.records .rec-date { color: var(--muted); }
+.records .rec-stars { letter-spacing: 1px; }
+.records tr.is-new td { background: rgba(108, 140, 255, .14); }
+.records tr.is-new .rec-place::after { content: ' ←'; color: var(--accent); }
+
+.records-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 26px 10px;
+}
+
+.records-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
 
 /* ---------- Мобильные ---------- */
 @media (max-width: 480px) {

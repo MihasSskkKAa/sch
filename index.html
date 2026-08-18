@@ -36,7 +36,10 @@
 
       <div class="level-grid" id="level-grid"><!-- уровни рисует JS --></div>
 
-      <button class="btn btn-ghost btn-reset" id="btn-reset">Сбросить прогресс</button>
+      <div class="menu-actions">
+        <button class="btn btn-ghost" id="btn-records">🏆 Таблица рекордов</button>
+        <button class="btn btn-ghost" id="btn-reset">Сбросить прогресс</button>
+      </div>
     </section>
 
     <!-- ЭКРАН: игра -->
@@ -94,8 +97,47 @@
         <div class="result-actions">
           <button class="btn btn-primary" id="btn-continue">Следующий уровень</button>
           <button class="btn btn-ghost" id="btn-retry">Пройти заново</button>
+          <button class="btn btn-ghost" id="btn-result-records">🏆 Рекорды</button>
           <button class="btn btn-ghost" id="btn-menu">В меню</button>
         </div>
+      </div>
+    </section>
+
+    <!-- ЭКРАН: таблица рекордов -->
+    <section id="screen-records" class="screen">
+      <header class="records-head">
+        <h2>🏆 Таблица рекордов</h2>
+        <p class="records-note">Каждое пройденное прохождение уровня попадает сюда. Результаты хранятся в этом браузере и никуда не отправляются.</p>
+      </header>
+
+      <label class="player-row">
+        <span>Имя игрока</span>
+        <input type="text" id="player-name" maxlength="16" placeholder="Игрок" autocomplete="off">
+      </label>
+
+      <div class="records-wrap" id="records-wrap">
+        <table class="records">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Игрок</th>
+              <th>Уровень</th>
+              <th>Звёзды</th>
+              <th>Очки</th>
+              <th>Дата</th>
+            </tr>
+          </thead>
+          <tbody id="records-body"><!-- строки рисует JS --></tbody>
+        </table>
+      </div>
+
+      <p class="records-empty" id="records-empty" hidden>
+        Пока пусто. Пройди любой уровень — результат появится здесь.
+      </p>
+
+      <div class="records-actions">
+        <button class="btn btn-primary" id="btn-records-back">← В меню</button>
+        <button class="btn btn-ghost" id="btn-records-clear">Очистить таблицу</button>
       </div>
     </section>
 
