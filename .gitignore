@@ -1,0 +1,50 @@
+# --- ОС ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# --- Редакторы и IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Логи и временные файлы ---
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+
+# --- Секреты и окружение ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Node.js ---
+node_modules/
+dist/
+build/
+coverage/
+.npm/
+.cache/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
