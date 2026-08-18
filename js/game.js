@@ -11,7 +11,7 @@
   var RETRY_KEY = 'school-quest-retry';
   var RECORDS_KEY = 'school-quest-records';
   var PLAYER_KEY = 'school-quest-player';
-  var MAX_RECORDS = 15;
+  var MAX_RECORDS = 60;
   var LIVES_PER_LEVEL = 3;
   var HINTS_PER_LEVEL = 3;
   var QUESTIONS_PER_ROUND = 8;
@@ -77,11 +77,10 @@
   /* ================= Рекорды ================= */
 
   /**
-   * Таблица рекордов целиком локальная: сервера у игры нет, поэтому результаты
-   * лежат в браузере игрока и никуда не отправляются.
-   */
-  /**
-   * Порядок и длину таблицы задаём при чтении, а не только при записи:
+   * Локальная таблица результатов этого браузера. Общий рейтинг живёт
+   * отдельно — см. leaderboard.js.
+   *
+   * Порядок и длину задаём при чтении, а не только при записи:
    * в хранилище могут оказаться данные от старой версии или правленые вручную.
    */
   function нормализовать(list) {
@@ -171,23 +170,67 @@
   /** Счётчик запросов: пока грузили рейтинг, вкладку могли переключить. */
   var запросРейтинга = 0;
 
+  /**
+   * Сводит плоский список результатов к строке на игрока: в каждом столбце
+   * уровня остаётся его лучший результат, в итоговом — сумма этих лучших.
+   */
+  function сводкаПоИгрокам(list) {
+    var карта = {};
+
+    list.forEach(function (r) {
+      if (!карта[r.имя]) карта[r.имя] = { имя: r.имя, уровни: {} };
+      var прежний = карта[r.имя].уровни[r.уровень];
+      if (!прежний || r.очки > прежний.очки) карта[r.имя].уровни[r.уровень] = r;
+    });
+
+    return Object.keys(карта).map(function (ключ) {
+      var игрок = карта[ключ];
+      игрок.всего = LEVELS.reduce(function (сумма, l) {
+        var rec = игрок.уровни[l.id];
+        return сумма + (rec ? rec.очки : 0);
+      }, 0);
+      return игрок;
+    }).sort(function (a, b) { return b.всего - a.всего; });
+  }
+
+  function рисоватьШапку() {
+    var head = '<th>#</th><th>Игрок</th>';
+    LEVELS.forEach(function (l) {
+      head += '<th class="rec-lvl" title="Уровень ' + l.id + ' — ' + экранировать(l.title) + '">' +
+        l.icon + '</th>';
+    });
+    $('records-head').innerHTML = head + '<th class="rec-total">Всего</th>';
+  }
+
   function рисоватьСтроки(list, подсветка) {
     var body = $('records-body');
-    body.innerHTML = '';
-    $('records-wrap').hidden = list.length === 0; // без строк шапка таблицы не нужна
+    var игроки = сводкаПоИгрокам(list);
 
-    list.forEach(function (r, i) {
+    body.innerHTML = '';
+    рисоватьШапку();
+    $('records-wrap').hidden = игроки.length === 0; // без строк шапка таблицы не нужна
+    $('records-legend').hidden = игроки.length === 0;
+
+    игроки.forEach(function (игрок, i) {
       var tr = document.createElement('tr');
-      if (подсветка && r.id === подсветка) tr.className = 'is-new';
-      tr.innerHTML =
-        '<td class="rec-place">' + (i + 1) + '</td>' +
-        '<td>' + экранировать(r.имя) + '</td>' +
-        '<td>' + r.уровень + ' — ' + экранировать(r.название) + '</td>' +
-        '<td class="rec-stars">' + starsRow(r.звёзды, 3) + '</td>' +
-        '<td class="rec-score">' + r.очки + '</td>' +
+      var html = '<td class="rec-place">' + (i + 1) + '</td>' +
+        '<td class="rec-name">' + экранировать(игрок.имя) + '</td>';
+
+      LEVELS.forEach(function (l) {
+        var rec = игрок.уровни[l.id];
+        if (!rec) {
+          html += '<td class="rec-lvl rec-empty">—</td>';
+          return;
+        }
         /* У записей, сделанных до появления секундомера, времени нет. */
-        '<td class="rec-time">' + (typeof r.время === 'number' ? форматВремени(r.время) : '—') + '</td>' +
-        '<td class="rec-date">' + форматДаты(r.дата) + '</td>';
+        var время = typeof rec.время === 'number' ? форматВремени(rec.время) : 'время не записано';
+        var подпись = rec.звёзды + ' из 3 звёзд · ' + время + ' · ' + форматДаты(rec.дата);
+        var свой = подсветка && rec.id === подсветка ? ' is-new' : '';
+        html += '<td class="rec-lvl' + свой + '" title="' + подпись + '">' +
+          '<span class="s' + rec.звёзды + '">' + rec.очки + '</span></td>';
+      });
+
+      tr.innerHTML = html + '<td class="rec-total">' + игрок.всего + '</td>';
       body.appendChild(tr);
     });
   }

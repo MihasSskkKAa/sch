@@ -522,11 +522,33 @@ body {
 
 .records tbody tr + tr td { border-top: 1px solid var(--line); }
 .records .rec-place { color: var(--muted); font-variant-numeric: tabular-nums; }
-.records .rec-score { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
-.records .rec-date { color: var(--muted); }
-.records .rec-stars { letter-spacing: 1px; }
-.records tr.is-new td { background: rgba(108, 140, 255, .14); }
-.records tr.is-new .rec-place::after { content: ' ←'; color: var(--accent); }
+.records .rec-name { font-weight: 600; }
+
+/* Колонки уровней и итог — числа, поэтому по центру и моноширинными цифрами. */
+.records .rec-lvl,
+.records .rec-total { text-align: center; font-variant-numeric: tabular-nums; }
+.records th.rec-lvl { font-size: 15px; letter-spacing: 0; }
+.records .rec-total { font-weight: 800; color: var(--accent); }
+.records .rec-empty { color: var(--line); }
+
+/* Цвет ячейки — сколько звёзд принесло прохождение. */
+.s3 { color: var(--ok); font-weight: 700; }
+.s2 { color: var(--text); font-weight: 600; }
+.s1 { color: var(--muted); }
+
+.records td.is-new {
+  background: rgba(108, 140, 255, .18);
+  border-radius: 6px;
+  outline: 1px solid var(--accent);
+}
+
+.records-legend {
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-align: center;
+}
 
 .records-empty {
   text-align: center;

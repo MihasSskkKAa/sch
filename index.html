@@ -135,23 +135,19 @@
 
       <div class="records-wrap" id="records-wrap">
         <table class="records">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Игрок</th>
-              <th>Уровень</th>
-              <th>Звёзды</th>
-              <th>Очки</th>
-              <th>Время</th>
-              <th>Дата</th>
-            </tr>
-          </thead>
+          <thead><tr id="records-head"><!-- шапку строит JS по списку уровней --></tr></thead>
           <tbody id="records-body"><!-- строки рисует JS --></tbody>
         </table>
       </div>
 
       <p class="records-empty" id="records-empty" hidden>
         Пока пусто. Пройди любой уровень — результат появится здесь.
+      </p>
+
+      <p class="records-legend" id="records-legend" hidden>
+        В ячейке — лучший результат игрока на этом уровне. Цвет показывает звёзды:
+        <b class="s3">три</b>, <b class="s2">две</b>, <b class="s1">одна</b>.
+        Наведите на ячейку, чтобы увидеть время и дату.
       </p>
 
       <div class="records-actions">

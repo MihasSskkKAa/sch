@@ -10,7 +10,7 @@ const LEADERBOARD = (function () {
   'use strict';
 
   var ТАБЛИЦА = 'records';
-  var ЛИМИТ = 20;
+  var ЛИМИТ = 200;
 
   function настроен() {
     return Boolean(typeof SUPABASE !== 'undefined' && SUPABASE.url && SUPABASE.anonKey);
