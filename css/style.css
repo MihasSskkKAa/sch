@@ -181,6 +181,10 @@ body {
 
 .btn-icon:hover { color: var(--bad); border-color: var(--bad); }
 
+/* Кнопка звука не должна выглядеть опасной, как «выйти». */
+.btn-icon-sound:hover { color: var(--accent); border-color: var(--accent); }
+.btn-icon-sound.is-muted { opacity: .45; }
+
 /* ---------- Шапка игры ---------- */
 .game-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .head-info { flex: 1; min-width: 0; }

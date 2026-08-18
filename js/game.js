@@ -7,6 +7,7 @@
   'use strict';
 
   var STORAGE_KEY = 'school-quest-progress';
+  var SOUND_KEY = 'school-quest-sound';
   var LIVES_PER_LEVEL = 3;
   var HINTS_PER_LEVEL = 3;
   var QUESTIONS_PER_ROUND = 8;
@@ -50,6 +51,69 @@
     var progress = loadProgress();
     var prev = progress[levelId - 1];
     return Boolean(prev && prev.passed);
+  }
+
+  /* ================= Звук ================= */
+
+  /**
+   * Звук синтезируется через Web Audio API, поэтому в репозитории нет
+   * ни одного аудиофайла и игра одинаково работает с диска и с сервера.
+   */
+  var audioCtx = null;
+  var soundOn = true;
+
+  try {
+    soundOn = localStorage.getItem(SOUND_KEY) !== 'off';
+  } catch (e) {
+    /* приватный режим — просто оставляем звук включённым */
+  }
+
+  /** Контекст создаётся лениво: браузеры разрешают звук только после действия игрока. */
+  function getAudio() {
+    if (!soundOn) return null;
+    var Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    if (!audioCtx) audioCtx = new Ctor();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  /** Короткое восходящее трезвучие на верный ответ. */
+  function playCorrectSound() {
+    var ctx = getAudio();
+    if (!ctx) return;
+
+    [784, 988, 1319].forEach(function (freq, i) { // соль — си — ми
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      var start = ctx.currentTime + i * 0.09;
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.16, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.32);
+    });
+  }
+
+  function renderSoundButton() {
+    var btn = $('btn-sound');
+    btn.textContent = soundOn ? '🔊' : '🔇';
+    btn.classList.toggle('is-muted', !soundOn);
+    btn.title = soundOn ? 'Выключить звук' : 'Включить звук';
+  }
+
+  function toggleSound() {
+    soundOn = !soundOn;
+    try { localStorage.setItem(SOUND_KEY, soundOn ? 'on' : 'off'); } catch (e) { /* без сохранения */ }
+    renderSoundButton();
+    if (soundOn) playCorrectSound(); // сразу показываем, как это звучит
   }
 
   /* ================= Утилиты ================= */
@@ -290,6 +354,7 @@
     if (isRight) {
       state.correct++;
       state.score += reward;
+      playCorrectSound();
     } else {
       state.lives--;
     }
@@ -364,6 +429,7 @@
 
   $('btn-next').addEventListener('click', nextQuestion);
   $('btn-hint').addEventListener('click', useHint);
+  $('btn-sound').addEventListener('click', toggleSound);
 
   $('btn-quit').addEventListener('click', function () {
     stopTimer();
@@ -415,5 +481,6 @@
 
   /* ================= Старт ================= */
 
+  renderSoundButton();
   renderMenu();
 })();
