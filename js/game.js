@@ -28,6 +28,9 @@
     score: 0,
     timeLeft: 0,
     timerId: null,
+    startedAt: 0,     // отметка старта уровня для общего секундомера
+    runMs: 0,         // сколько заняло прохождение целиком
+    runTimerId: null,
     locked: false     // true, пока показывается разбор ответа
   };
 
@@ -106,6 +109,18 @@
     }
   }
 
+  /** Миллисекунды → «мм:сс», а после часа → «ч:мм:сс». */
+  function форматВремени(ms) {
+    var всего = Math.max(0, Math.round(ms / 1000));
+    var часы = Math.floor(всего / 3600);
+    var минуты = Math.floor((всего % 3600) / 60);
+    var секунды = всего % 60;
+    function дв(n) { return n < 10 ? '0' + n : String(n); }
+    return часы > 0
+      ? часы + ':' + дв(минуты) + ':' + дв(секунды)
+      : дв(минуты) + ':' + дв(секунды);
+  }
+
   function loadPlayerName() {
     try {
       return localStorage.getItem(PLAYER_KEY) || '';
@@ -121,7 +136,7 @@
   /** id последнего добавленного результата — чтобы подсветить его в таблице. */
   var свежийРекорд = null;
 
-  function addRecord(level, score, stars) {
+  function addRecord(level, score, stars, runMs) {
     var list = loadRecords();
 
     свежийРекорд = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 7);
@@ -132,6 +147,7 @@
       название: level.title,
       очки: score,
       звёзды: stars,
+      время: runMs,
       дата: new Date().toISOString()
     });
 
@@ -150,6 +166,7 @@
     var body = $('records-body');
 
     $('player-name').value = loadPlayerName();
+    $('player-name-menu').value = loadPlayerName();
     $('records-empty').hidden = list.length > 0;
     $('records-wrap').hidden = list.length === 0; // без строк шапка таблицы не нужна
     body.innerHTML = '';
@@ -163,6 +180,8 @@
         '<td>' + r.уровень + ' — ' + экранировать(r.название) + '</td>' +
         '<td class="rec-stars">' + starsRow(r.звёзды, 3) + '</td>' +
         '<td class="rec-score">' + r.очки + '</td>' +
+        /* У записей, сделанных до появления секундомера, времени нет. */
+        '<td class="rec-time">' + (typeof r.время === 'number' ? форматВремени(r.время) : '—') + '</td>' +
         '<td class="rec-date">' + форматДаты(r.дата) + '</td>';
       body.appendChild(tr);
     });
@@ -407,10 +426,13 @@
     state.lives = LIVES_PER_LEVEL;
     state.hintsLeft = HINTS_PER_LEVEL;
     state.score = 0;
+    state.startedAt = Date.now();
+    state.runMs = 0;
 
     $('game-level-name').textContent = 'Уровень ' + level.id + ' — ' + level.title;
 
     showScreen('screen-game');
+    startRunClock();
     renderQuestion();
   }
 
@@ -501,6 +523,27 @@
     }
   }
 
+  /**
+   * Общий секундомер уровня. В отличие от таймера вопроса он не
+   * останавливается на разборе ответа — считается всё время прохождения.
+   */
+  function startRunClock() {
+    stopRunClock();
+    updateRunClock();
+    state.runTimerId = setInterval(updateRunClock, 1000);
+  }
+
+  function stopRunClock() {
+    if (state.runTimerId) {
+      clearInterval(state.runTimerId);
+      state.runTimerId = null;
+    }
+  }
+
+  function updateRunClock() {
+    $('run-time').textContent = форматВремени(Date.now() - state.startedAt);
+  }
+
   function updateTimer() {
     var share = state.timeLeft / state.level.time;
     var fill = $('timer-fill');
@@ -561,6 +604,8 @@
 
   function finishLevel(passed) {
     stopTimer();
+    stopRunClock();
+    state.runMs = Date.now() - state.startedAt;
 
     var total = state.questions.length;
     var stars = 0;
@@ -581,7 +626,7 @@
     }
     saveRetryPool(pool);
 
-    if (passed) addRecord(state.level, state.score, stars);
+    if (passed) addRecord(state.level, state.score, stars, state.runMs);
 
     if (passed) {
       var progress = loadProgress();
@@ -603,6 +648,7 @@
     $('result-stars').innerHTML = starsRow(stars, 3);
     $('res-correct').textContent = state.correct + ' / ' + total;
     $('res-score').textContent = passed ? state.score : 0;
+    $('res-time').textContent = форматВремени(state.runMs);
 
     $('result-text').textContent = !passed
       ? 'Закончились жизни. Разбор ответов ты уже видел — попробуй ещё раз, теперь будет легче.'
@@ -624,6 +670,7 @@
 
   $('btn-quit').addEventListener('click', function () {
     stopTimer();
+    stopRunClock();
     renderMenu();
     showScreen('screen-menu');
   });
@@ -661,9 +708,16 @@
     renderRecords();
   });
 
-  $('player-name').addEventListener('input', function () {
-    savePlayerName(this.value.trim());
-  });
+  /* Поле имени есть и в меню, и в таблице рекордов — держим их в согласии. */
+  function bindNameField(id, другое) {
+    $(id).addEventListener('input', function () {
+      savePlayerName(this.value.trim());
+      $(другое).value = this.value;
+    });
+  }
+
+  bindNameField('player-name', 'player-name-menu');
+  bindNameField('player-name-menu', 'player-name');
 
   $('btn-reset').addEventListener('click', function () {
     if (!confirm('Сбросить весь прогресс? Открытые уровни и очки будут удалены.')) return;
@@ -700,5 +754,6 @@
   /* ================= Старт ================= */
 
   renderSoundButton();
+  $('player-name-menu').value = loadPlayerName();
   renderMenu();
 })();

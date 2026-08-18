@@ -34,6 +34,11 @@
         </div>
       </div>
 
+      <label class="player-row">
+        <span>Имя игрока</span>
+        <input type="text" id="player-name-menu" maxlength="16" placeholder="Игрок" autocomplete="off">
+      </label>
+
       <div class="level-grid" id="level-grid"><!-- уровни рисует JS --></div>
 
       <div class="menu-actions">
@@ -48,7 +53,10 @@
         <button class="btn-icon" id="btn-quit" title="Выйти в меню" aria-label="Выйти в меню">✕</button>
         <div class="head-info">
           <span class="level-name" id="game-level-name">Уровень</span>
-          <span class="q-counter" id="q-counter">Вопрос 1 из 8</span>
+          <span class="q-counter">
+            <span id="q-counter">Вопрос 1 из 8</span>
+            <span class="run-time">⏱ <span id="run-time">00:00</span></span>
+          </span>
         </div>
         <button class="btn-icon btn-icon-sound" id="btn-sound" title="Звук" aria-label="Включить или выключить звук">🔊</button>
         <div class="lives" id="lives"><!-- сердца рисует JS --></div>
@@ -92,6 +100,7 @@
         <div class="result-numbers">
           <div class="rn"><span id="res-correct">0</span><small>верных ответов</small></div>
           <div class="rn"><span id="res-score">0</span><small>очков за уровень</small></div>
+          <div class="rn"><span id="res-time">00:00</span><small>общее время</small></div>
         </div>
 
         <div class="result-actions">
@@ -124,6 +133,7 @@
               <th>Уровень</th>
               <th>Звёзды</th>
               <th>Очки</th>
+              <th>Время</th>
               <th>Дата</th>
             </tr>
           </thead>

@@ -196,6 +196,7 @@ body {
 .head-info { flex: 1; min-width: 0; }
 .level-name { display: block; font-size: 16px; font-weight: 700; }
 .q-counter { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+.run-time { margin-left: 8px; font-variant-numeric: tabular-nums; }
 .lives { font-size: 18px; letter-spacing: 3px; white-space: nowrap; }
 .heart-lost { opacity: .25; filter: grayscale(1); }
 
@@ -381,7 +382,7 @@ body {
 
 .result-numbers {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin: 24px 0;
 }
@@ -392,7 +393,7 @@ body {
   padding: 16px 10px;
 }
 
-.rn span { display: block; font-size: 26px; font-weight: 800; color: var(--accent); }
+.rn span { display: block; font-size: 24px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
 .rn small { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
 
 .result-actions { display: grid; gap: 10px; }
