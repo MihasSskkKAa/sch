@@ -304,6 +304,37 @@ body {
 .option.is-wrong { border-color: var(--bad); background: rgba(255, 95, 126, .14); }
 .option.is-wrong .option-key { background: var(--bad); color: #3d0011; }
 
+/* ---------- Подсказка ---------- */
+.hint-row { margin-top: 16px; }
+
+.btn-hint {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--warn);
+  background: rgba(255, 193, 77, .1);
+  border: 1px dashed rgba(255, 193, 77, .45);
+  border-radius: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background .15s ease, opacity .15s ease;
+}
+
+.btn-hint:hover:not(:disabled) { background: rgba(255, 193, 77, .2); }
+.btn-hint:disabled { opacity: .35; cursor: default; }
+
+.hint-text {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  background: rgba(255, 193, 77, .09);
+  border-left: 3px solid var(--warn);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 14px;
+  animation: fade .3s ease;
+}
+
 /* ---------- Обратная связь ---------- */
 .feedback {
   margin-top: 16px;

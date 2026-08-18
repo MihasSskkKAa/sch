@@ -8,14 +8,18 @@
 
   var STORAGE_KEY = 'school-quest-progress';
   var LIVES_PER_LEVEL = 3;
+  var HINTS_PER_LEVEL = 3;
+  var QUESTIONS_PER_ROUND = 8;
 
   /** Текущая партия. Заполняется при старте уровня. */
   var state = {
     level: null,      // объект уровня из LEVELS
-    questions: [],    // перемешанная копия вопросов
+    questions: [],    // выборка вопросов на эту партию
     index: 0,         // номер текущего вопроса
     correct: 0,       // сколько верных ответов
     lives: LIVES_PER_LEVEL,
+    hintsLeft: HINTS_PER_LEVEL,
+    hintUsed: false,  // взята ли подсказка на текущем вопросе
     score: 0,
     timeLeft: 0,
     timerId: null,
@@ -63,9 +67,12 @@
     return copy;
   }
 
-  /** Перемешивает вопросы и варианты ответов, сохраняя указатель на верный. */
+  /**
+   * Берёт случайную выборку вопросов уровня и перемешивает варианты ответов,
+   * сохраняя указатель на верный.
+   */
   function prepareQuestions(level) {
-    return shuffle(level.questions).map(function (q) {
+    return shuffle(level.questions).slice(0, QUESTIONS_PER_ROUND).map(function (q) {
       var pairs = q.options.map(function (text, i) {
         return { text: text, isCorrect: i === q.correct };
       });
@@ -73,6 +80,7 @@
       return {
         subject: q.subject,
         text: q.text,
+        hint: q.hint,
         fact: q.fact,
         options: mixed.map(function (p) { return p.text; }),
         correct: mixed.findIndex(function (p) { return p.isCorrect; })
@@ -130,8 +138,8 @@
         '<span class="level-icon">' + level.icon + '</span>' +
         '<span class="level-body">' +
           '<span class="level-title">Уровень ' + level.id + ' — ' + level.title + '</span>' +
-          '<span class="level-sub">' + level.subtitle + ' · ' + level.questions.length +
-            ' вопросов · ' + level.time + ' сек на ответ</span>' +
+          '<span class="level-sub">' + level.subtitle + ' · ' + QUESTIONS_PER_ROUND +
+            ' вопросов из ' + level.questions.length + ' · ' + level.time + ' сек на ответ</span>' +
           starsHtml +
         '</span>' +
         (unlocked ? '' : '<span class="level-lock">🔒</span>');
@@ -158,6 +166,7 @@
     state.index = 0;
     state.correct = 0;
     state.lives = LIVES_PER_LEVEL;
+    state.hintsLeft = HINTS_PER_LEVEL;
     state.score = 0;
 
     $('game-level-name').textContent = 'Уровень ' + level.id + ' — ' + level.title;
@@ -174,12 +183,43 @@
     $('lives').innerHTML = out;
   }
 
+  /** Прячет текст подсказки и обновляет кнопку под остаток подсказок. */
+  function renderHintControls() {
+    var btn = $('btn-hint');
+    $('hint-text').hidden = true;
+    $('hint-count').textContent = state.hintsLeft;
+    btn.disabled = state.hintsLeft <= 0 || state.hintUsed || state.locked;
+  }
+
+  /** Открывает подсказку к текущему вопросу ценой половины очков за него. */
+  function useHint() {
+    if (state.locked || state.hintUsed || state.hintsLeft <= 0) return;
+
+    state.hintUsed = true;
+    state.hintsLeft--;
+
+    var box = $('hint-text');
+    box.textContent = state.questions[state.index].hint;
+    box.hidden = false;
+
+    $('hint-count').textContent = state.hintsLeft;
+    $('btn-hint').disabled = true;
+  }
+
+  /** Очки за верный ответ: подсказка уменьшает награду вдвое. */
+  function rewardForAnswer() {
+    var base = 100 * state.level.id + state.timeLeft * 5;
+    return state.hintUsed ? Math.round(base / 2) : base;
+  }
+
   function renderQuestion() {
     var q = state.questions[state.index];
     var total = state.questions.length;
 
     state.locked = false;
+    state.hintUsed = false;
     $('feedback').hidden = true;
+    renderHintControls();
 
     $('q-counter').textContent = 'Вопрос ' + (state.index + 1) + ' из ' + total;
     $('progress-fill').style.width = (state.index / total * 100) + '%';
@@ -246,18 +286,20 @@
       if (i === pickedIndex && !isRight) buttons[i].classList.add('is-wrong');
     }
 
+    var reward = rewardForAnswer();
     if (isRight) {
       state.correct++;
-      state.score += 100 * state.level.id + state.timeLeft * 5;
+      state.score += reward;
     } else {
       state.lives--;
     }
     renderLives();
+    $('btn-hint').disabled = true;
 
     var feedback = $('feedback');
     feedback.className = 'feedback ' + (isRight ? 'is-ok' : 'is-bad');
     $('feedback-head').textContent = isRight
-      ? 'Верно! +' + (100 * state.level.id + state.timeLeft * 5) + ' очков'
+      ? 'Верно! +' + reward + ' очков' + (state.hintUsed ? ' (с подсказкой)' : '')
       : timedOut ? 'Время вышло' : 'Неверно';
     $('feedback-fact').textContent = q.fact;
 
@@ -321,6 +363,7 @@
   /* ================= События ================= */
 
   $('btn-next').addEventListener('click', nextQuestion);
+  $('btn-hint').addEventListener('click', useHint);
 
   $('btn-quit').addEventListener('click', function () {
     stopTimer();
@@ -347,9 +390,15 @@
     renderMenu();
   });
 
-  /* Клавиатура: 1–4 — выбор ответа, Enter/пробел — дальше. */
+  /* Клавиатура: 1–4 — выбор ответа, H — подсказка, Enter/пробел — дальше. */
   document.addEventListener('keydown', function (e) {
     if (!$('screen-game').classList.contains('is-active')) return;
+
+    /* «р» — та же клавиша, что H, в русской раскладке. */
+    if (!state.locked && (e.key === 'h' || e.key === 'H' || e.key === 'р' || e.key === 'Р')) {
+      useHint();
+      return;
+    }
 
     if (!state.locked && e.key >= '1' && e.key <= '4') {
       var idx = Number(e.key) - 1;
