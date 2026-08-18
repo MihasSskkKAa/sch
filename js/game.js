@@ -172,20 +172,29 @@
   }
 
   /**
-   * Собирает набор вопросов на партию. После проигрыша вопросы прошлой попытки
-   * исключаются целиком; если свежих не хватает (банк уровня слишком мал),
-   * недостающие добираются из отложенных.
+   * Собирает набор вопросов на партию.
+   *
+   * Отложенные вопросы копятся: каждый провал добавляет свою партию к прошлым,
+   * поэтому подряд идущие попытки не пересекаются, пока в банке хватает свежих.
+   * Когда банк исчерпан, начинается новый круг — придерживаем только последнюю
+   * партию, чтобы её вопросы не повторились сразу же.
    */
   function pickQuestions(level) {
-    var исключить = loadRetryPool()[level.id] || [];
-    var свежие = level.questions.filter(function (q) { return исключить.indexOf(q.text) < 0; });
+    var pool = loadRetryPool();
+    var отложенные = pool[level.id] || [];
+    var свежие = level.questions.filter(function (q) { return отложенные.indexOf(q.text) < 0; });
 
-    if (свежие.length >= QUESTIONS_PER_ROUND) {
-      return shuffle(свежие).slice(0, QUESTIONS_PER_ROUND);
+    if (свежие.length < QUESTIONS_PER_ROUND) {
+      отложенные = отложенные.slice(-QUESTIONS_PER_ROUND);
+      pool[level.id] = отложенные;
+      saveRetryPool(pool);
+      свежие = level.questions.filter(function (q) { return отложенные.indexOf(q.text) < 0; });
     }
 
-    var отложенные = level.questions.filter(function (q) { return исключить.indexOf(q.text) >= 0; });
-    return shuffle(свежие).concat(shuffle(отложенные)).slice(0, QUESTIONS_PER_ROUND);
+    /* Банк уровня меньше партии — играем всем, что есть. */
+    if (свежие.length < QUESTIONS_PER_ROUND) свежие = level.questions.slice();
+
+    return shuffle(свежие).slice(0, QUESTIONS_PER_ROUND);
   }
 
   /**
@@ -450,14 +459,18 @@
       stars = state.correct === total ? 3 : state.correct >= total - 1 ? 2 : 1;
     }
 
-    /* Провал — откладываем эти вопросы, чтобы перепрохождение началось с чистого набора. */
-    var отложенные = loadRetryPool();
+    /* Провал — добавляем эти вопросы к отложенным, победа — очищает список. */
+    var pool = loadRetryPool();
     if (passed) {
-      delete отложенные[state.level.id];
+      delete pool[state.level.id];
     } else {
-      отложенные[state.level.id] = state.questions.map(function (q) { return q.text; });
+      var список = pool[state.level.id] || [];
+      state.questions.forEach(function (q) {
+        if (список.indexOf(q.text) < 0) список.push(q.text);
+      });
+      pool[state.level.id] = список;
     }
-    saveRetryPool(отложенные);
+    saveRetryPool(pool);
 
     if (passed) {
       var progress = loadProgress();
