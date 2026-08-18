@@ -78,28 +78,42 @@
     return audioCtx;
   }
 
+  /** Одна нота с мягким нарастанием и затуханием. */
+  function playTone(ctx, freq, delay, duration, type, peak) {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    var start = ctx.currentTime + delay;
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, start);
+
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(peak, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + duration + 0.02);
+  }
+
   /** Короткое восходящее трезвучие на верный ответ. */
   function playCorrectSound() {
     var ctx = getAudio();
     if (!ctx) return;
 
     [784, 988, 1319].forEach(function (freq, i) { // соль — си — ми
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      var start = ctx.currentTime + i * 0.09;
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, start);
-
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.16, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.32);
+      playTone(ctx, freq, i * 0.09, 0.3, 'triangle', 0.16);
     });
+  }
+
+  /** Низкий нисходящий сигнал на неверный ответ — глуше и мягче, чем «победный». */
+  function playWrongSound() {
+    var ctx = getAudio();
+    if (!ctx) return;
+
+    playTone(ctx, 220, 0, 0.22, 'sine', 0.14);    // ля малой октавы
+    playTone(ctx, 155, 0.11, 0.34, 'sine', 0.14); // ре-диез ниже — падение вниз
   }
 
   function renderSoundButton() {
@@ -357,6 +371,7 @@
       playCorrectSound();
     } else {
       state.lives--;
+      playWrongSound(); // истёкшее время сюда тоже попадает — оно считается ошибкой
     }
     renderLives();
     $('btn-hint').disabled = true;
