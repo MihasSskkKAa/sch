@@ -436,6 +436,55 @@ body {
 
 .player-row input:focus { outline: none; border-color: var(--accent); }
 
+.records-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rec-tab {
+  flex: 1;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 11px 12px;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.rec-tab:hover { color: var(--text); }
+
+.rec-tab.is-active {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--card-2);
+}
+
+.records-status {
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.records-status.is-error { border-color: var(--bad); color: var(--bad); }
+.records-status code {
+  font-size: 13px;
+  color: var(--accent);
+  background: rgba(108, 140, 255, .12);
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+
 /* Широкую таблицу прокручиваем внутри контейнера, а не всей страницей. */
 .records-wrap {
   overflow-x: auto;

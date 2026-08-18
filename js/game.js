@@ -140,7 +140,7 @@
     var list = loadRecords();
 
     свежийРекорд = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 7);
-    list.push({
+    var запись = {
       id: свежийРекорд,
       имя: loadPlayerName() || 'Игрок',
       уровень: level.id,
@@ -149,9 +149,13 @@
       звёзды: stars,
       время: runMs,
       дата: new Date().toISOString()
-    });
+    };
 
+    list.push(запись);
     saveRecords(нормализовать(list));
+
+    /* Отправка в общий рейтинг необязательна: нет сети или настроек — играем дальше. */
+    LEADERBOARD.отправить(запись);
   }
 
   function форматДаты(iso) {
@@ -161,19 +165,20 @@
     return дв(d.getDate()) + '.' + дв(d.getMonth() + 1) + '.' + d.getFullYear();
   }
 
-  function renderRecords() {
-    var list = loadRecords();
-    var body = $('records-body');
+  /** Какая вкладка открыта: 'global' — общий рейтинг, 'local' — свои результаты. */
+  var вкладкаРекордов = 'local';
 
-    $('player-name').value = loadPlayerName();
-    $('player-name-menu').value = loadPlayerName();
-    $('records-empty').hidden = list.length > 0;
-    $('records-wrap').hidden = list.length === 0; // без строк шапка таблицы не нужна
+  /** Счётчик запросов: пока грузили рейтинг, вкладку могли переключить. */
+  var запросРейтинга = 0;
+
+  function рисоватьСтроки(list, подсветка) {
+    var body = $('records-body');
     body.innerHTML = '';
+    $('records-wrap').hidden = list.length === 0; // без строк шапка таблицы не нужна
 
     list.forEach(function (r, i) {
       var tr = document.createElement('tr');
-      if (r.id === свежийРекорд) tr.className = 'is-new';
+      if (подсветка && r.id === подсветка) tr.className = 'is-new';
       tr.innerHTML =
         '<td class="rec-place">' + (i + 1) + '</td>' +
         '<td>' + экранировать(r.имя) + '</td>' +
@@ -184,6 +189,69 @@
         '<td class="rec-time">' + (typeof r.время === 'number' ? форматВремени(r.время) : '—') + '</td>' +
         '<td class="rec-date">' + форматДаты(r.дата) + '</td>';
       body.appendChild(tr);
+    });
+  }
+
+  function статус(html, ошибка) {
+    var el = $('records-status');
+    if (!html) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    el.className = 'records-status' + (ошибка ? ' is-error' : '');
+    el.innerHTML = html;
+  }
+
+  function renderRecords() {
+    $('player-name').value = loadPlayerName();
+    $('player-name-menu').value = loadPlayerName();
+    $('tab-global').classList.toggle('is-active', вкладкаРекордов === 'global');
+    $('tab-local').classList.toggle('is-active', вкладкаРекордов === 'local');
+    /* Чистить можно только свою таблицу — общая не принадлежит игроку. */
+    $('btn-records-clear').hidden = вкладкаРекордов !== 'local';
+
+    запросРейтинга++; // отменяем возможный незавершённый запрос
+
+    if (вкладкаРекордов === 'local') {
+      var list = loadRecords();
+      статус('');
+      $('records-empty').hidden = list.length > 0;
+      рисоватьСтроки(list, свежийРекорд);
+      return;
+    }
+
+    $('records-empty').hidden = true;
+    рисоватьСтроки([], null);
+
+    if (!LEADERBOARD.настроен()) {
+      статус(
+        'Общий рейтинг ещё не подключён. Впишите адрес проекта Supabase и публичный ключ ' +
+        'в файл <code>js/config.js</code> — как это сделать, описано в README. ' +
+        'До тех пор работает вкладка «Мои результаты».',
+        false
+      );
+      return;
+    }
+
+    var мойЗапрос = запросРейтинга;
+    статус('Загружаю общий рейтинг…', false);
+
+    LEADERBOARD.загрузить().then(function (rows) {
+      if (мойЗапрос !== запросРейтинга) return; // вкладку переключили, ответ уже не нужен
+      if (!rows.length) {
+        статус('В общем рейтинге пока пусто. Пройдите уровень — и окажетесь первым.', false);
+        return;
+      }
+      статус('');
+      рисоватьСтроки(rows, null);
+    }).catch(function (e) {
+      if (мойЗапрос !== запросРейтинга) return;
+      статус(
+        'Не удалось загрузить общий рейтинг: ' + экранировать(e.message) + '. ' +
+        'Проверьте соединение или откройте вкладку «Мои результаты».',
+        true
+      );
     });
   }
 
@@ -696,6 +764,16 @@
   $('btn-records').addEventListener('click', openRecords);
   $('btn-result-records').addEventListener('click', openRecords);
 
+  $('tab-global').addEventListener('click', function () {
+    вкладкаРекордов = 'global';
+    renderRecords();
+  });
+
+  $('tab-local').addEventListener('click', function () {
+    вкладкаРекордов = 'local';
+    renderRecords();
+  });
+
   $('btn-records-back').addEventListener('click', function () {
     renderMenu();
     showScreen('screen-menu');
@@ -755,5 +833,7 @@
 
   renderSoundButton();
   $('player-name-menu').value = loadPlayerName();
+  /* Пока рейтинг не настроен, открываем сразу свои результаты. */
+  вкладкаРекордов = LEADERBOARD.настроен() ? 'global' : 'local';
   renderMenu();
 })();

@@ -116,13 +116,20 @@
     <section id="screen-records" class="screen">
       <header class="records-head">
         <h2>🏆 Таблица рекордов</h2>
-        <p class="records-note">Каждое пройденное прохождение уровня попадает сюда. Результаты хранятся в этом браузере и никуда не отправляются.</p>
+        <p class="records-note">Каждое пройденное прохождение уровня попадает сюда. «Мои результаты» хранятся только в этом браузере, «Общий рейтинг» — общий для всех игроков.</p>
       </header>
 
       <label class="player-row">
         <span>Имя игрока</span>
         <input type="text" id="player-name" maxlength="16" placeholder="Игрок" autocomplete="off">
       </label>
+
+      <div class="records-tabs">
+        <button class="rec-tab is-active" id="tab-global">🌍 Общий рейтинг</button>
+        <button class="rec-tab" id="tab-local">💾 Мои результаты</button>
+      </div>
+
+      <p class="records-status" id="records-status" hidden></p>
 
       <div class="records-wrap" id="records-wrap">
         <table class="records">
@@ -153,7 +160,9 @@
 
   </div>
 
+  <script src="js/config.js"></script>
   <script src="js/questions.js"></script>
+  <script src="js/leaderboard.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
