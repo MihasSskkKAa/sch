@@ -16,8 +16,10 @@ const LEADERBOARD = (function () {
     return Boolean(typeof SUPABASE !== 'undefined' && SUPABASE.url && SUPABASE.anonKey);
   }
 
+  /** Терпим и адрес проекта, и адрес, в который уже вписан путь /rest/v1. */
   function адрес(путь) {
-    return String(SUPABASE.url).replace(/\/+$/, '') + '/rest/v1/' + путь;
+    var база = String(SUPABASE.url).replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+    return база + '/rest/v1/' + путь;
   }
 
   function заголовки(доп) {
