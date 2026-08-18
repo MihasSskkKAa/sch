@@ -8,6 +8,7 @@
 
   var STORAGE_KEY = 'school-quest-progress';
   var SOUND_KEY = 'school-quest-sound';
+  var RETRY_KEY = 'school-quest-retry';
   var LIVES_PER_LEVEL = 3;
   var HINTS_PER_LEVEL = 3;
   var QUESTIONS_PER_ROUND = 8;
@@ -43,6 +44,27 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     } catch (e) {
       /* приватный режим браузера — играем без сохранения */
+    }
+  }
+
+  /**
+   * Вопросы проваленных попыток: id уровня → тексты вопросов той партии.
+   * Хранятся рядом с прогрессом, поэтому переживают перезагрузку страницы.
+   */
+  function loadRetryPool() {
+    try {
+      var raw = localStorage.getItem(RETRY_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveRetryPool(pool) {
+    try {
+      localStorage.setItem(RETRY_KEY, JSON.stringify(pool));
+    } catch (e) {
+      /* приватный режим браузера — тогда набор действует только до перезагрузки */
     }
   }
 
@@ -150,18 +172,12 @@
   }
 
   /**
-   * Вопросы проваленных попыток: id уровня → тексты вопросов той партии.
-   * Нужны, чтобы после проигрыша уровень выдал полностью другой набор.
-   */
-  var проваленные = {};
-
-  /**
    * Собирает набор вопросов на партию. После проигрыша вопросы прошлой попытки
    * исключаются целиком; если свежих не хватает (банк уровня слишком мал),
    * недостающие добираются из отложенных.
    */
   function pickQuestions(level) {
-    var исключить = проваленные[level.id] || [];
+    var исключить = loadRetryPool()[level.id] || [];
     var свежие = level.questions.filter(function (q) { return исключить.indexOf(q.text) < 0; });
 
     if (свежие.length >= QUESTIONS_PER_ROUND) {
@@ -435,11 +451,13 @@
     }
 
     /* Провал — откладываем эти вопросы, чтобы перепрохождение началось с чистого набора. */
+    var отложенные = loadRetryPool();
     if (passed) {
-      delete проваленные[state.level.id];
+      delete отложенные[state.level.id];
     } else {
-      проваленные[state.level.id] = state.questions.map(function (q) { return q.text; });
+      отложенные[state.level.id] = state.questions.map(function (q) { return q.text; });
     }
+    saveRetryPool(отложенные);
 
     if (passed) {
       var progress = loadProgress();
@@ -501,7 +519,10 @@
 
   $('btn-reset').addEventListener('click', function () {
     if (!confirm('Сбросить весь прогресс? Открытые уровни и очки будут удалены.')) return;
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* нечего чистить */ }
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(RETRY_KEY);
+    } catch (e) { /* нечего чистить */ }
     renderMenu();
   });
 
