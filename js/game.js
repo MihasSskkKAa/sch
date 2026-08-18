@@ -432,9 +432,18 @@
 
   /* ================= Меню ================= */
 
+  /** Без имени игру не начинаем: иначе рекорды подписывать нечем. */
+  function имяЗадано() {
+    return loadPlayerName().length > 0;
+  }
+
   function renderMenu() {
     var progress = loadProgress();
     var grid = $('level-grid');
+    var естьИмя = имяЗадано();
+
+    $('name-hint').hidden = естьИмя;
+    $('player-row-menu').classList.toggle('is-required', !естьИмя);
     var totalScore = 0;
     var totalStars = 0;
     var done = 0;
@@ -452,8 +461,9 @@
       }
 
       var btn = document.createElement('button');
-      btn.className = 'level' + (unlocked ? '' : ' is-locked');
-      btn.disabled = !unlocked;
+      btn.className = 'level' + (unlocked && естьИмя ? '' : ' is-locked');
+      btn.disabled = !unlocked || !естьИмя;
+      if (unlocked && !естьИмя) btn.title = 'Сначала введите имя игрока';
 
       var starsHtml = saved && saved.passed
         ? '<div class="level-stars">' + starsRow(saved.stars, 3) +
@@ -486,6 +496,14 @@
   function startLevel(levelId) {
     var level = LEVELS.filter(function (l) { return l.id === levelId; })[0];
     if (!level) return;
+
+    /* Имя могли стереть на экране рекордов — возвращаем в меню к полю. */
+    if (!имяЗадано()) {
+      renderMenu();
+      showScreen('screen-menu');
+      $('player-name-menu').focus();
+      return;
+    }
 
     state.level = level;
     state.questions = prepareQuestions(level);
@@ -791,6 +809,8 @@
     $(id).addEventListener('input', function () {
       savePlayerName(this.value.trim());
       $(другое).value = this.value;
+      /* Уровни включаются и выключаются прямо по ходу набора. */
+      if ($('screen-menu').classList.contains('is-active')) renderMenu();
     });
   }
 

@@ -435,6 +435,15 @@ body {
 }
 
 .player-row input:focus { outline: none; border-color: var(--accent); }
+.player-row.is-required { border-color: var(--warn); }
+.player-row.is-required input { border-color: var(--warn); }
+
+.name-hint {
+  margin: -6px 0 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--warn);
+}
 
 .records-tabs {
   display: flex;

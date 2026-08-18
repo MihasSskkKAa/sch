@@ -34,10 +34,12 @@
         </div>
       </div>
 
-      <label class="player-row">
+      <label class="player-row" id="player-row-menu">
         <span>Имя игрока</span>
-        <input type="text" id="player-name-menu" maxlength="16" placeholder="Игрок" autocomplete="off">
+        <input type="text" id="player-name-menu" maxlength="16" placeholder="Как вас записать в рекорды?" autocomplete="off">
       </label>
+
+      <p class="name-hint" id="name-hint" hidden>Введите имя — без него уровни не запускаются.</p>
 
       <div class="level-grid" id="level-grid"><!-- уровни рисует JS --></div>
 
